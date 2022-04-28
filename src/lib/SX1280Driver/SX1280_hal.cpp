@@ -170,7 +170,7 @@ void SX1280Hal::reset(void)
 #endif
 
     BusyDelay(10000); // 10ms delay if GPIO_PIN_BUSY is undefined
-    WaitOnBusy();
+    WaitOnBusy(SX1280_Radio_All);
 
     //this->BusyState = SX1280_NOT_BUSY;
     DBGLN("SX1280 Ready!");
@@ -188,7 +188,7 @@ void ICACHE_RAM_ATTR SX1280Hal::WriteCommand(SX1280_RadioCommands_t command, uin
     OutBuffer[0] = (uint8_t)command;
     memcpy(OutBuffer + 1, buffer, size);
 
-    WaitOnBusy();
+    WaitOnBusy(radioNumber);
     NssLow(radioNumber);
     SPI.transfer(OutBuffer, (uint8_t)sizeof(OutBuffer));
     NssHigh(radioNumber);
@@ -201,7 +201,7 @@ void ICACHE_RAM_ATTR SX1280Hal::ReadCommand(SX1280_RadioCommands_t command, uint
     WORD_ALIGNED_ATTR uint8_t OutBuffer[size + 2];
     #define RADIO_GET_STATUS_BUF_SIZEOF 3 // special case for command == SX1280_RADIO_GET_STATUS, fixed 3 bytes packet size
 
-    WaitOnBusy();
+    WaitOnBusy(radioNumber);
     NssLow(radioNumber);
 
     if (command == SX1280_RADIO_GET_STATUS)
@@ -233,7 +233,7 @@ void ICACHE_RAM_ATTR SX1280Hal::WriteRegister(uint16_t address, uint8_t *buffer,
 
     memcpy(OutBuffer + 3, buffer, size);
 
-    WaitOnBusy();
+    WaitOnBusy(radioNumber);
     NssLow(radioNumber);
     SPI.transfer(OutBuffer, (uint8_t)sizeof(OutBuffer));
     NssHigh(radioNumber);
@@ -255,7 +255,7 @@ void ICACHE_RAM_ATTR SX1280Hal::ReadRegister(uint16_t address, uint8_t *buffer, 
     OutBuffer[2] = (address & 0x00FF);
     OutBuffer[3] = 0x00;
 
-    WaitOnBusy();
+    WaitOnBusy(radioNumber);
     NssLow(radioNumber);
 
     SPI.transfer(OutBuffer, uint8_t(sizeof(OutBuffer)));
@@ -287,7 +287,7 @@ void ICACHE_RAM_ATTR SX1280Hal::WriteBuffer(uint8_t offset, volatile uint8_t *bu
 
     memcpy(OutBuffer + 2, localbuf, size);
 
-    WaitOnBusy();
+    WaitOnBusy(radioNumber);
 
     NssLow(radioNumber);
     SPI.transfer(OutBuffer, (uint8_t)sizeof(OutBuffer));
@@ -305,7 +305,7 @@ void ICACHE_RAM_ATTR SX1280Hal::ReadBuffer(uint8_t offset, volatile uint8_t *buf
     OutBuffer[1] = offset;
     OutBuffer[2] = 0x00;
 
-    WaitOnBusy();
+    WaitOnBusy(radioNumber);
 
     NssLow(radioNumber);
     SPI.transfer(OutBuffer, uint8_t(sizeof(OutBuffer)));
@@ -319,22 +319,33 @@ void ICACHE_RAM_ATTR SX1280Hal::ReadBuffer(uint8_t offset, volatile uint8_t *buf
     }
 }
 
-bool ICACHE_RAM_ATTR SX1280Hal::WaitOnBusy()
+bool ICACHE_RAM_ATTR SX1280Hal::WaitOnBusy(SX1280_Radio_Number_t radioNumber)
 {
 #if defined(GPIO_PIN_BUSY) && (GPIO_PIN_BUSY != UNDEF_PIN)
     constexpr uint32_t wtimeoutUS = 1000U;
     uint32_t startTime = micros();
 
-#if defined(GPIO_PIN_BUSY_2) && (GPIO_PIN_BUSY_2 != UNDEF_PIN)
-    while (digitalRead(GPIO_PIN_BUSY) == HIGH || digitalRead(GPIO_PIN_BUSY_2) == HIGH) // wait untill not busy or until wtimeoutUS
-#else
-    while (digitalRead(GPIO_PIN_BUSY) == HIGH) // wait untill not busy or until wtimeoutUS
-#endif
+    while ((micros() - startTime) < wtimeoutUS) // wait untill not busy or until wtimeoutUS
     {
-        if ((micros() - startTime) > wtimeoutUS)
+        if (radioNumber == SX1280_Radio_1)
         {
-            //DBGLN("TO");
-            return false;
+            if (digitalRead(GPIO_PIN_BUSY) == LOW) return true;
+        }
+#if defined(GPIO_PIN_BUSY_2) && (GPIO_PIN_BUSY_2 != UNDEF_PIN)
+        else
+        if (radioNumber == SX1280_Radio_2)
+        {
+            if (digitalRead(GPIO_PIN_BUSY_2) == LOW) return true;
+        }
+#endif
+        else
+        if (radioNumber == SX1280_Radio_All)
+        {
+#if defined(GPIO_PIN_BUSY_2) && (GPIO_PIN_BUSY_2 != UNDEF_PIN)
+            if (digitalRead(GPIO_PIN_BUSY) == LOW && digitalRead(GPIO_PIN_BUSY_2) == LOW) return true;
+#else
+            if (digitalRead(GPIO_PIN_BUSY) == LOW) return true;
+#endif
         }
         else
         {
@@ -347,6 +358,8 @@ bool ICACHE_RAM_ATTR SX1280Hal::WaitOnBusy()
             #endif
         }
     }
+
+    return false;
 #else
     // observed BUSY time for Write* calls are 12-20uS after NSS de-assert
     // and state transitions require extra time depending on prior state
@@ -362,9 +375,9 @@ bool ICACHE_RAM_ATTR SX1280Hal::WaitOnBusy()
             #endif
         BusyDelayDuration = 0;
     }
-    // delayMicroseconds(80);
-#endif
+
     return true;
+#endif
 }
 
 void ICACHE_RAM_ATTR SX1280Hal::dioISR()
