@@ -533,6 +533,8 @@ static void ICACHE_RAM_ATTR updateDiversity()
 
 void ICACHE_RAM_ATTR HWtimerCallbackTock()
 {
+    Radio.clearGotPacketThisInterval();
+
 #if defined(Regulatory_Domain_EU_CE_2400)
     // Emulate that TX just happened, even if it didn't because channel is not clear
     if(!LBTSuccessCalc.currentIsSet())
@@ -858,6 +860,7 @@ void ICACHE_RAM_ATTR ProcessRFPacket(SX12xxDriverCommon::rx_status const status)
     getRFlinkInfo();
     // Received a packet, that's the definition of LQ
     LQCalc.add();
+    Radio.setGotPacketThisInterval();
     // Extend sync duration since we've received a packet at this rate
     // but do not extend it indefinitely
     RFmodeCycleMultiplier = RFmodeCycleMultiplierSlow;
