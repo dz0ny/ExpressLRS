@@ -64,6 +64,9 @@ public:
     void (*IsrCallback_1)(); //function pointer for callback
     void (*IsrCallback_2)(); //function pointer for callback
 
+#if defined(GPIO_PIN_BUSY) && (GPIO_PIN_BUSY != UNDEF_PIN)
+    void BusyDelay(uint32_t duration) const { (void)duration; };
+#else
     uint32_t BusyDelayStart;
     uint32_t BusyDelayDuration;
     void BusyDelay(uint32_t duration)
@@ -71,4 +74,5 @@ public:
         BusyDelayStart = micros();
         BusyDelayDuration = duration;
     }
+#endif
 };
