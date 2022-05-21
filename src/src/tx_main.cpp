@@ -162,8 +162,7 @@ bool ICACHE_RAM_ATTR IsArmed()
 void switchDiversityAntennas()
 {
 #if defined(GPIO_PIN_ANT_CTRL_1) && (GPIO_PIN_ANT_CTRL_1 != UNDEF_PIN)
-    bool oldState = diversityAntennaState;
-    diversityAntennaState = !oldState;
+    diversityAntennaState = !diversityAntennaState;
     digitalWrite(GPIO_PIN_ANT_CTRL_1, diversityAntennaState);
 #endif
 #if defined(GPIO_PIN_ANT_CTRL_2) && (GPIO_PIN_ANT_CTRL_2 != UNDEF_PIN)
@@ -528,8 +527,9 @@ void ICACHE_RAM_ATTR timerCallbackNormal()
   }
 
   // Tx Antenna Diversity
-  if (NonceTX % ExpressLRS_currAirRate_Modparams->numOfSends == 0 || // Swicth with new packet data
-      NonceTX % ExpressLRS_currAirRate_Modparams->numOfSends == ExpressLRS_currAirRate_Modparams->numOfSends / 2) // Swicth in the middle of DVDA sends
+  if ((NonceTX % ExpressLRS_currAirRate_Modparams->numOfSends == 0 || // Swicth with new packet data
+      NonceTX % ExpressLRS_currAirRate_Modparams->numOfSends == ExpressLRS_currAirRate_Modparams->numOfSends / 2) && // Swicth in the middle of DVDA sends
+      TelemetryRcvPhase == ttrpTransmitting) // Only switch when transmitting.  A diversity rx will send tlm back on the best antenna.  So dont switch away from it.
   {
     switchDiversityAntennas();
   }  
