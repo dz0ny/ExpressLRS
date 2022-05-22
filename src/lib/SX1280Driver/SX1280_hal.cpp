@@ -33,9 +33,10 @@ void SX1280Hal::end()
 {
     TXRXdisable(); // make sure the RX/TX amp pins are disabled
     detachInterrupt(GPIO_PIN_DIO1);
-#if defined(GPIO_PIN_DIO1_2) && (GPIO_PIN_DIO1_2 != UNDEF_PIN)
-    detachInterrupt(GPIO_PIN_DIO1_2);
-#endif
+    if (GPIO_PIN_DIO1_2 != UNDEF_PIN)
+    {
+        detachInterrupt(GPIO_PIN_DIO1_2);
+    }
     SPI.end();
     IsrCallback_1 = nullptr; // remove callbacks
     IsrCallback_2 = nullptr; // remove callbacks
@@ -44,57 +45,47 @@ void SX1280Hal::end()
 void SX1280Hal::init()
 {
     DBGLN("Hal Init");
-#if defined(GPIO_PIN_BUSY) && (GPIO_PIN_BUSY != UNDEF_PIN)
-    pinMode(GPIO_PIN_BUSY, INPUT);
-#endif
-#if defined(GPIO_PIN_BUSY_2) && (GPIO_PIN_BUSY_2 != UNDEF_PIN)
-    pinMode(GPIO_PIN_BUSY_2, INPUT);
-#endif
-
+    if (GPIO_PIN_BUSY != UNDEF_PIN)
+    {
+        pinMode(GPIO_PIN_BUSY, INPUT);
+    }
+    if (GPIO_PIN_BUSY_2 != UNDEF_PIN)
+    {
+        pinMode(GPIO_PIN_BUSY_2, INPUT);
+    }
     pinMode(GPIO_PIN_DIO1, INPUT);
-#if defined(GPIO_PIN_DIO1_2) && (GPIO_PIN_DIO1_2 != UNDEF_PIN)
-    pinMode(GPIO_PIN_DIO1_2, INPUT);
-#endif
+    if (GPIO_PIN_DIO1_2 != UNDEF_PIN)
+    {
+        pinMode(GPIO_PIN_DIO1_2, INPUT);
+    }
 
     pinMode(GPIO_PIN_NSS, OUTPUT);
-#if defined(GPIO_PIN_NSS_2) && (GPIO_PIN_NSS_2 != UNDEF_PIN)
-    pinMode(GPIO_PIN_NSS_2, OUTPUT);
-#endif
+    if (GPIO_PIN_NSS_2 != UNDEF_PIN)
+    {
+        pinMode(GPIO_PIN_NSS_2, OUTPUT);
+    }
     NssHigh(SX1280_Radio_All);
 
-#if defined(GPIO_PIN_PA_ENABLE) && (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
-    DBGLN("Use PA enable pin: %d", GPIO_PIN_PA_ENABLE);
-    pinMode(GPIO_PIN_PA_ENABLE, OUTPUT);
-    digitalWrite(GPIO_PIN_PA_ENABLE, LOW);
-#endif
+    if (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
+    {
+        DBGLN("Use PA enable pin: %d", GPIO_PIN_PA_ENABLE);
+        pinMode(GPIO_PIN_PA_ENABLE, OUTPUT);
+        digitalWrite(GPIO_PIN_PA_ENABLE, LOW);
+    }
 
-#if defined(GPIO_PIN_PA_SE2622L_ENABLE) && (GPIO_PIN_PA_SE2622L_ENABLE != UNDEF_PIN)
-    DBGLN("Use PA ctrl pin: %d", GPIO_PIN_PA_SE2622L_ENABLE);
-    pinMode(GPIO_PIN_PA_SE2622L_ENABLE, OUTPUT);
-    digitalWrite(GPIO_PIN_PA_SE2622L_ENABLE, LOW);
-#endif
+    if (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
+    {
+        DBGLN("Use TX pin: %d", GPIO_PIN_TX_ENABLE);
+        pinMode(GPIO_PIN_TX_ENABLE, OUTPUT);
+        digitalWrite(GPIO_PIN_TX_ENABLE, LOW);
+    }
 
-#if defined(GPIO_PIN_TX_ENABLE) && (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
-    DBGLN("Use TX pin: %d", GPIO_PIN_TX_ENABLE);
-    pinMode(GPIO_PIN_TX_ENABLE, OUTPUT);
-    digitalWrite(GPIO_PIN_TX_ENABLE, LOW);
-#endif
-
-#if defined(GPIO_PIN_RX_ENABLE) && (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
-    DBGLN("Use RX pin: %d", GPIO_PIN_RX_ENABLE);
-    pinMode(GPIO_PIN_RX_ENABLE, OUTPUT);
-    digitalWrite(GPIO_PIN_RX_ENABLE, LOW);
-#endif
-
-#if defined(GPIO_PIN_ANT_CTRL_1) && (GPIO_PIN_ANT_CTRL_1 != UNDEF_PIN)
-    pinMode(GPIO_PIN_ANT_CTRL_1, OUTPUT);
-    digitalWrite(GPIO_PIN_ANT_CTRL_1, HIGH);
-#endif
-
-#if defined(GPIO_PIN_ANT_CTRL_2) && (GPIO_PIN_ANT_CTRL_2 != UNDEF_PIN)
-    pinMode(GPIO_PIN_ANT_CTRL_2, OUTPUT);
-    digitalWrite(GPIO_PIN_ANT_CTRL_2, LOW);
-#endif
+    if (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
+    {
+        DBGLN("Use RX pin: %d", GPIO_PIN_RX_ENABLE);
+        pinMode(GPIO_PIN_RX_ENABLE, OUTPUT);
+        digitalWrite(GPIO_PIN_RX_ENABLE, LOW);
+    }
 
 #ifdef PLATFORM_ESP32
     SPI.begin(GPIO_PIN_SCK, GPIO_PIN_MISO, GPIO_PIN_MOSI, -1); // sck, miso, mosi, ss (ss can be any GPIO)
@@ -119,40 +110,38 @@ void SX1280Hal::init()
 
     //attachInterrupt(digitalPinToInterrupt(GPIO_PIN_BUSY), this->busyISR, CHANGE); //not used atm
     attachInterrupt(digitalPinToInterrupt(GPIO_PIN_DIO1), this->dioISR_1, RISING);
-#if defined(GPIO_PIN_DIO1_2) && (GPIO_PIN_DIO1_2 != UNDEF_PIN)
-    attachInterrupt(digitalPinToInterrupt(GPIO_PIN_DIO1_2), this->dioISR_2, RISING);
-#endif
+    if (GPIO_PIN_DIO1_2 != UNDEF_PIN)
+    {
+        attachInterrupt(digitalPinToInterrupt(GPIO_PIN_DIO1_2), this->dioISR_2, RISING);
+    }
 }
 
 void SX1280Hal::NssHigh(SX1280_Radio_Number_t radioNumber)
 {
     if (radioNumber & SX1280_Radio_1) digitalWrite(GPIO_PIN_NSS, HIGH);
-#if defined(GPIO_PIN_NSS_2) && (GPIO_PIN_NSS_2 != UNDEF_PIN)
-    if (radioNumber & SX1280_Radio_2) digitalWrite(GPIO_PIN_NSS_2, HIGH);
-#endif
+    if (GPIO_PIN_NSS_2 != UNDEF_PIN && radioNumber & SX1280_Radio_2) digitalWrite(GPIO_PIN_NSS_2, HIGH);
 }
 
 void SX1280Hal::NssLow(SX1280_Radio_Number_t radioNumber)
 {
     if (radioNumber & SX1280_Radio_1) digitalWrite(GPIO_PIN_NSS, LOW);
-#if defined(GPIO_PIN_NSS_2) && (GPIO_PIN_NSS_2 != UNDEF_PIN)
-    if (radioNumber & SX1280_Radio_2) digitalWrite(GPIO_PIN_NSS_2, LOW);
-#endif
+    if (GPIO_PIN_NSS_2 != UNDEF_PIN && radioNumber & SX1280_Radio_2) digitalWrite(GPIO_PIN_NSS_2, LOW);
 }
 
 void SX1280Hal::reset(void)
 {
     DBGLN("SX1280 Reset");
 
-#if defined(GPIO_PIN_RST) && (GPIO_PIN_RST != UNDEF_PIN)
-    pinMode(GPIO_PIN_RST, OUTPUT);
+    if (GPIO_PIN_RST != UNDEF_PIN)
+    {
+        pinMode(GPIO_PIN_RST, OUTPUT);
+    }
 
     delay(50);
     digitalWrite(GPIO_PIN_RST, LOW);
     delay(50);
     digitalWrite(GPIO_PIN_RST, HIGH);
     delay(50); // Safety buffer. Busy takes longer to go low than the 1ms timeout in WaitOnBusy().
-#endif
 
     BusyDelay(10000); // 10ms delay if GPIO_PIN_BUSY is undefined
     WaitOnBusy(SX1280_Radio_All);
@@ -306,54 +295,49 @@ void ICACHE_RAM_ATTR SX1280Hal::ReadBuffer(uint8_t offset, volatile uint8_t *buf
 
 bool ICACHE_RAM_ATTR SX1280Hal::WaitOnBusy(SX1280_Radio_Number_t radioNumber)
 {
-#if defined(GPIO_PIN_BUSY) && (GPIO_PIN_BUSY != UNDEF_PIN)
-    constexpr uint32_t wtimeoutUS = 1000U;
-    uint32_t startTime = 0;
-    uint32_t now = 0;
-
-    while (true)
+    if (GPIO_PIN_BUSY != UNDEF_PIN)
     {
-        if (radioNumber == SX1280_Radio_1)
+        constexpr uint32_t wtimeoutUS = 1000U;
+        uint32_t startTime = 0;
+
+        while (true)
         {
-            if (digitalRead(GPIO_PIN_BUSY) == LOW) return true;
-        }
-#if defined(GPIO_PIN_BUSY_2) && (GPIO_PIN_BUSY_2 != UNDEF_PIN)
-        else
-        if (radioNumber == SX1280_Radio_2)
-        {
-            if (digitalRead(GPIO_PIN_BUSY_2) == LOW) return true;
-        }
-#endif
-        else
-        if (radioNumber == SX1280_Radio_All)
-        {
-#if defined(GPIO_PIN_BUSY_2) && (GPIO_PIN_BUSY_2 != UNDEF_PIN)
-            if (digitalRead(GPIO_PIN_BUSY) == LOW && digitalRead(GPIO_PIN_BUSY_2) == LOW) return true;
-#else
-            if (digitalRead(GPIO_PIN_BUSY) == LOW) return true;
-#endif
-        }
-        else
-        {
-            // Use this time to call micros().
-            now = micros();
-            if (startTime == 0) startTime = now;
-            if ((now - startTime) > wtimeoutUS) return false;
+            if (radioNumber == SX1280_Radio_1)
+            {
+                if (digitalRead(GPIO_PIN_BUSY) == LOW) return true;
+            }
+            else if (GPIO_PIN_BUSY_2 != UNDEF_PIN && radioNumber == SX1280_Radio_2)
+            {
+                if (digitalRead(GPIO_PIN_BUSY_2) == LOW) return true;
+            }
+            else if (radioNumber == SX1280_Radio_All)
+            {
+                if (GPIO_PIN_BUSY_2 != UNDEF_PIN)
+                {
+                    if (digitalRead(GPIO_PIN_BUSY) == LOW && digitalRead(GPIO_PIN_BUSY_2) == LOW) return true;
+                }
+                else
+                {
+                    if (digitalRead(GPIO_PIN_BUSY) == LOW) return true;
+                }
+            }
+            else
+            {
+                // Use this time to call micros().
+                uint32_t now = micros();
+                if (startTime == 0) startTime = now;
+                if ((now - startTime) > wtimeoutUS) return false;
+            }
         }
     }
-#else
-    // observed BUSY time for Write* calls are 12-20uS after NSS de-assert
-    // and state transitions require extra time depending on prior state
-    if (BusyDelayDuration)
+    else
     {
         uint32_t now = micros();
         while ((now - BusyDelayStart) < BusyDelayDuration)
             now = micros();
         BusyDelayDuration = 0;
     }
-
     return true;
-#endif
 }
 
 void ICACHE_RAM_ATTR SX1280Hal::dioISR_1()
@@ -370,53 +354,32 @@ void ICACHE_RAM_ATTR SX1280Hal::dioISR_2()
 
 void ICACHE_RAM_ATTR SX1280Hal::TXenable()
 {
-#if defined(GPIO_PIN_PA_ENABLE) && (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_PA_ENABLE, HIGH);
-#endif
-#if defined(GPIO_PIN_RX_ENABLE) && (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_RX_ENABLE, LOW);
-#endif
-#if defined(GPIO_PIN_TX_ENABLE) && (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_TX_ENABLE, HIGH);
-#endif
-#if defined(GPIO_PIN_ANT_CTRL_1) && (GPIO_PIN_ANT_CTRL_1 != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_ANT_CTRL_1, HIGH);
-#endif
-#if defined(GPIO_PIN_ANT_CTRL_2) && (GPIO_PIN_ANT_CTRL_2 != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_ANT_CTRL_2, LOW);
-#endif
+    if (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_PA_ENABLE, HIGH);
+    if (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_RX_ENABLE, LOW);
+    if (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_TX_ENABLE, HIGH);
 }
 
 void ICACHE_RAM_ATTR SX1280Hal::RXenable()
 {
-#if defined(GPIO_PIN_PA_ENABLE) && (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_PA_ENABLE, HIGH);
-#endif
-#if defined(GPIO_PIN_RX_ENABLE) && (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_RX_ENABLE, HIGH);
-#endif
-#if defined(GPIO_PIN_TX_ENABLE) && (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_TX_ENABLE, LOW);
-#endif
-#if defined(GPIO_PIN_ANT_CTRL_1) && (GPIO_PIN_ANT_CTRL_1 != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_ANT_CTRL_1, LOW);
-#endif
-#if defined(GPIO_PIN_ANT_CTRL_2) && (GPIO_PIN_ANT_CTRL_2 != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_ANT_CTRL_2, HIGH);
-#endif
+    if (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_PA_ENABLE, HIGH);
+    if (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_RX_ENABLE, HIGH);
+    if (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_TX_ENABLE, LOW);
 }
 
 void ICACHE_RAM_ATTR SX1280Hal::TXRXdisable()
 {
-#if defined(GPIO_PIN_RX_ENABLE) && (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_RX_ENABLE, LOW);
-#endif
-#if defined(GPIO_PIN_TX_ENABLE) && (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_TX_ENABLE, LOW);
-#endif
-#if defined(GPIO_PIN_PA_ENABLE) && (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
-    digitalWrite(GPIO_PIN_PA_ENABLE, LOW);
-#endif
+    if (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_RX_ENABLE, LOW);
+    if (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_TX_ENABLE, LOW);
+    if (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
+        digitalWrite(GPIO_PIN_PA_ENABLE, LOW);
 }
 
 #endif // UNIT_TEST
