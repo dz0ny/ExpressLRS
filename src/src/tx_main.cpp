@@ -12,6 +12,7 @@
 #include "devScreen.h"
 #include "devBuzzer.h"
 #include "devBLE.h"
+#include "devTelemetryBLE.h"
 #include "devLUA.h"
 #include "devWIFI.h"
 #include "devButton.h"
@@ -32,6 +33,7 @@ MSP msp;
 ELRS_EEPROM eeprom;
 TxConfig config;
 Stream *TxBackpack;
+BLETelementry bletl;
 
 #if defined(PLATFORM_ESP8266) || defined(PLATFORM_ESP32)
 unsigned long rebootTime = 0;
@@ -81,6 +83,9 @@ device_affinity_t ui_devices[] = {
 #endif
 #ifdef HAS_BLE
   {&BLE_device, 1},
+#endif
+#ifdef HAS_BLE_TELEMETRY
+  {&BLE_telemetry, 1},
 #endif
 #ifdef HAS_BUZZER
   {&Buzzer_device, 1},
@@ -1062,12 +1067,15 @@ void loop()
   if ((connectionState == connected) && (LastTLMpacketRecvMillis != 0) &&
       (now >= (uint32_t)(firmwareOptions.tlm_report_interval + TLMpacketReported))) {
     crsf.sendLinkStatisticsToTX();
+    bletl.sendLinkStatistics(crsf.LinkStatistics);
     TLMpacketReported = now;
   }
 
   if (TelemetryReceiver.HasFinishedData())
   {
+      bletl.updateTelemetry(CRSFinBuffer);
       crsf.sendTelemetryToTX(CRSFinBuffer);
+
       TelemetryReceiver.Unlock();
   }
 
